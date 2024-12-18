@@ -81,12 +81,22 @@ def view_saved_passwords():
     view_window.geometry("500x300")
     view_window.resizable(False, False)
 
+    # Style the Treeview widget
+    style = ttk.Style()
+    style.configure("Treeview", font=("Segoe UI", 11), rowheight=25)
+    style.configure("Treeview.Heading", font=("Segoe UI", 12, "bold"))
+    style.map("Treeview", background=[("selected", "#347083")])  # Highlight selection color
+
     # Create a Treeview for displaying passwords
     tree = ttk.Treeview(view_window, columns=("Password", "Copied On"), show="headings", height=10)
     tree.heading("Password", text="Password")
     tree.heading("Copied On", text="Copied On")
     tree.column("Password", anchor="center", width=200)
     tree.column("Copied On", anchor="center", width=250)
+
+    # Colors
+    tree.tag_configure("evenrow", background="#F0F0F0")
+    tree.tag_configure("oddrow", background="#FFFFFF")
 
     # Add a scrollable text widget
     scrollbar = Scrollbar(view_window, orient="vertical", command=tree.yview)
@@ -102,8 +112,9 @@ def view_saved_passwords():
     with open(DATA_FILE, mode="r") as file:
         reader = csv.reader(file)
         next(reader, None)  # Skip the header row
-        for row in reader:
-            tree.insert("", "end", values=(row[0], row[1]))
+        for index, row in enumerate(reader):
+            tag = "evenrow" if index % 2 == 0 else "oddrow"
+            tree.insert("", "end", values=(row[0], row[1]), tags=(tag,))
 
     # Optional: Add a button to close the window
     close_button = ttk.Button(view_window, text="Close", command=view_window.destroy)
