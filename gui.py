@@ -1,7 +1,10 @@
+import os
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, Toplevel, Text, Scrollbar, ttk
 import pyperclip
 from generator import generate_password
+from saver import save_to_database, DATA_FILE
+import csv
 
 
 def on_generate_click():
@@ -14,15 +17,24 @@ def on_generate_click():
         messagebox.showerror("Invalid Input", "Please enter a valid number for the password length.")
         return
 
+    # Get checkbox and pattern inputs
     use_uppercase = uppercase_var.get()
     use_lowercase = lowercase_var.get()
     use_numbers = numbers_var.get()
     use_specials = specials_var.get()
     complexity = complexity_var.get()
-    pattern = pattern_entry.get()
+    pattern = pattern_entry.get().lower()  # Convert pattern to lowercase for uniformity
 
-    # Generate the password using the generator function
-    password = generate_password(length, use_uppercase, use_lowercase, use_numbers, use_specials, pattern, complexity)
+    # Generate the password
+    password = generate_password(
+        length=length,
+        use_uppercase=use_uppercase,
+        use_lowercase=use_lowercase,
+        use_numbers=use_numbers,
+        use_specials=use_specials,
+        pattern=pattern,
+        complexity=complexity
+    )
 
     # Display the generated password
     password_label.config(text=password)
@@ -34,6 +46,8 @@ def on_copy_click():
     if password:
         pyperclip.copy(password)
         messagebox.showinfo("Copied", "Password has been copied to the clipboard!")
+        # Save to the database
+        save_to_database(password)
     else:
         messagebox.showwarning("No Password", "Generate a password first!")
 
@@ -41,6 +55,7 @@ def on_copy_click():
 # Create the main window
 root = tk.Tk()
 root.title("Password Generator")
+root.resizable(False, False)
 
 # Create and place the labels, entries, and buttons
 tk.Label(root, text="Password Length:").grid(row=0, column=0, padx=10, pady=10)
@@ -50,6 +65,50 @@ length_entry.grid(row=0, column=1, padx=10, pady=10)
 tk.Label(root, text="Pattern (e.g., 'ulsn'):").grid(row=1, column=0, padx=10, pady=10)
 pattern_entry = tk.Entry(root)
 pattern_entry.grid(row=1, column=1, padx=10, pady=10)
+
+strength_label = tk.Label(root, text="Password Strength: ", font=("Arial", 12, "bold"))
+
+
+def view_saved_passwords():
+    """Display all saved passwords in a new window."""
+    if not os.path.isfile(DATA_FILE):
+        messagebox.showinfo("No Data", "No passwords have been saved yet!")
+        return
+
+    # Create a new window
+    view_window = Toplevel()
+    view_window.title("Saved Passwords")
+    view_window.geometry("500x300")
+    view_window.resizable(False, False)
+
+    # Create a Treeview for displaying passwords
+    tree = ttk.Treeview(view_window, columns=("Password", "Copied On"), show="headings", height=10)
+    tree.heading("Password", text="Password")
+    tree.heading("Copied On", text="Copied On")
+    tree.column("Password", anchor="center", width=200)
+    tree.column("Copied On", anchor="center", width=250)
+
+    # Add a scrollable text widget
+    scrollbar = Scrollbar(view_window, orient="vertical", command=tree.yview)
+    tree.configure(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side="right", fill="y")
+    tree.pack(expand=True, fill="both")
+
+    text_widget = Text(view_window, wrap="none", yscrollcommand=scrollbar.set)
+    text_widget.pack(expand=True, fill="both")
+    scrollbar.config(command=text_widget.yview)
+
+    # Read the saved passwords
+    with open(DATA_FILE, mode="r") as file:
+        reader = csv.reader(file)
+        next(reader, None)  # Skip the header row
+        for row in reader:
+            tree.insert("", "end", values=(row[0], row[1]))
+
+    # Optional: Add a button to close the window
+    close_button = ttk.Button(view_window, text="Close", command=view_window.destroy)
+    close_button.pack(pady=10)
+
 
 # Checkbox options for character types
 uppercase_var = tk.BooleanVar()
@@ -81,5 +140,9 @@ password_label.grid(row=8, column=0, columnspan=2, padx=10, pady=10)
 copy_button = tk.Button(root, text="Copy to Clipboard", command=on_copy_click)
 copy_button.grid(row=9, column=0, columnspan=2, padx=10, pady=10)
 
+# View saved passwords button
+view_button = tk.Button(root, text="View Saved Passwords", command=view_saved_passwords)
+view_button.grid(row=10, column=0, columnspan=2, padx=10, pady=10)
+view_button.config(bg="lightblue")
 # Start the  main loop
 root.mainloop()
