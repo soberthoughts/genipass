@@ -9,7 +9,7 @@
 - Standalone executable for Windows, no Python installation required.
 
 ## Installation Instructions
-1. Download the latest version of `Genipass` from the [release page](#link-to-your-release-page).
+1. Download the latest version of `Genipass` from the [release page](https://github.com/soberthoughts/genipass/releases/tag/v1.0.0).
 2. No installation is required. Simply download and extract the ZIP file, if applicable.
 
 ## Usage Instructions
